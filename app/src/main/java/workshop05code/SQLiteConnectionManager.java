@@ -60,16 +60,13 @@ public class SQLiteConnectionManager {
      * @param fileName the database file name
      */
     public void createNewDatabase(String fileName) {
-
         try (Connection conn = DriverManager.getConnection(databaseURL)) {
             if (conn != null) {
                 DatabaseMetaData meta = conn.getMetaData();
-                System.out.println("The driver name is " + meta.getDriverName());
-                System.out.println("A new database has been created.");
-
+                logger.info("Database created. Driver: " + meta.getDriverName());
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            logger.log(Level.SEVERE, "Failed to create database.", e);
         }
     }
 
@@ -80,19 +77,12 @@ public class SQLiteConnectionManager {
      *         no url defined, also false.
      */
     public boolean checkIfConnectionDefined() {
-        if (databaseURL.equals("")) {
+        try (Connection conn = DriverManager.getConnection(databaseURL)) {
+            return conn != null;
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Database connection check failed.", e);
             return false;
-        } else {
-            try (Connection conn = DriverManager.getConnection(databaseURL)) {
-                if (conn != null) {
-                    return true;
-                }
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
-                return false;
-            }
         }
-        return false;
     }
 
     /**
@@ -101,21 +91,17 @@ public class SQLiteConnectionManager {
      * @return true if the table structures have been created.
      */
     public boolean createWordleTables() {
-        if (databaseURL.equals("")) {
+        try (Connection conn = DriverManager.getConnection(databaseURL);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(WORDLE_DROP_TABLE_STRING);
+            stmt.execute(WORDLE_CREATE_STRING);
+            stmt.execute(VALID_WORDS_DROP_TABLE_STRING);
+            stmt.execute(VALID_WORDS_CREATE_STRING);
+            logger.info("Wordle tables created successfully.");
+            return true;
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Failed to create tables.", e);
             return false;
-        } else {
-            try (Connection conn = DriverManager.getConnection(databaseURL);
-                    Statement stmt = conn.createStatement()) {
-                stmt.execute(WORDLE_DROP_TABLE_STRING);
-                stmt.execute(WORDLE_CREATE_STRING);
-                stmt.execute(VALID_WORDS_DROP_TABLE_STRING);
-                stmt.execute(VALID_WORDS_CREATE_STRING);
-                return true;
-
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
-                return false;
-            }
         }
     }
 
